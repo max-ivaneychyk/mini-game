@@ -1,10 +1,6 @@
-/**
- * @file модуль управления событями приложения Конструкторы: {@link Event}.
- * Методы: {@link game.addEvent}, {@link game.hasEvent}, {@link game.on}, {@link game.once}, {@link game.onDel}, {@link game.getEventList},
- */
-(function () {
-	var game = window.game,
-		utils = game.utils,
+
+
+	var event = {},
 		events = {};
 
 	/**
@@ -14,7 +10,7 @@
 	 * @param {{}} ctx контекст события
 	 * @param {array} listners массив слушателей события
 	 * @constructor
-	 * @desc записываеться в {@link game.utils~instance}
+	 * @desc записываеться в {@link event.utils~instance}
 	 */
 	function Event(name) {
 		this.name = name;
@@ -36,10 +32,10 @@
 		 * @param {Function} handler обработчик события
 		 */
 		once: function (handler) {
-			var action = function () {
+			var action =  () => {
 					handler.apply(this, arguments);
 					this.onDel(action);
-				}.bind(this);
+				};
 
 			action.onceNameFunc = true;
 			this.on(action);
@@ -89,7 +85,7 @@
 		}
 	};
 	/**
-	 * @memberOf game
+	 * @memberOf event
 	 * @desc добавить событие
 	 * @param {String} name имя события
 	 * @param {{}} objEvent объект события
@@ -97,10 +93,10 @@
 	 * @param {array} listners массив слушателей события
 	 * @returns {{}} объект событий
 	 */
-	game.addEvent = function (name) {
+	event.addEvent = function (name) {
 		try {
-			if (!game.hasEvent(name)) {
-				events[name] = utils.create('Event', name);
+			if (!event.hasEvent(name)) {
+				events[name] = new Event(name);
 			}
 		} catch (err) {
 			console.error('create event error =>', err);
@@ -108,97 +104,72 @@
 		return events[name];
 	};
 	/**
-	 * @memberOf game
+	 * @memberOf event
 	 * @desc проверить наличие события
 	 * @param {String} name имя события
 	 * @returns {{}} объект события
 	 */
-	game.hasEvent = function (name) {
+	event.hasEvent = function (name) {
 		return events[name];
 	};
 	/**
-	 * @memberOf game
+	 * @memberOf event
 	 * @desc вернет уже существующее или новосозданое событие
 	 * @param {String} name имя события
 	 * @returns {{}} объект события
 	 */
-	game.event = function (name) {
-		if (!game.hasEvent(name)) {
-			game.addEvent(name);
+	event.event = function (name) {
+		if (!event.hasEvent(name)) {
+			event.addEvent(name);
 		}
 		return events[name];
 	};
 	/**
-	 * @memberOf game
+	 * @memberOf event
 	 * @desc проверяет наличие ивента и тригерит его
 	 * @param {String} name имя события
 	 */
-	game.emitEvent = function (name, data) {
-		if (game.hasEvent(name)) {
+	event.emit = function (name, data) {
+		if (event.hasEvent(name)) {
 			events[name].emit(data);
 		} else {
-			console.warn('Not found event -> ' + name);
+			console.warn('Not found handlers event -> ' + name);
 		}
 	};
-	/**
-	 * @memberOf game
-	 * @desc добавить обработчик к событию
-	 * @param {String} name имя события
-	 * @param {Function} handler обработчик события
-	 */
-	game.on = function (name, handler) {
-		return game.event(name).on(handler);
+
+	event.on = function (name, handler) {
+		return event.event(name).on(handler);
 	};
-    /**
-     * @memberOf game
-     * @desc если хоть один ивент проскочит, то выполнить обработчик
-     * @param {array} arrNamesEvents массив имен событий
-     * @param {Function} handler обработчик события
-     */
-	game.oneOf = function (arrNamesEvents, handler) {
+
+	event.on.every = function (arrNamesEvents, handler) {
+		arrNamesEvents.forEach(function (eventName) {
+			event.on(eventName, handler);
+		});
+	};
+
+	event.once = function (name, handler) {
+		return event.event(name).once(handler);
+	};
+
+	event.once.oneOf = function (arrNamesEvents, handler) {
 		var f = function (data) {
 			arrNamesEvents.forEach(function (eventName) {
-				game.onDel(eventName, f);
+				event.onDel(eventName, f);
 			});
 
 			handler(data);
 		};
 
 		arrNamesEvents.forEach(function (eventName) {
-			game.on(eventName, f);
+			event.on(eventName, f);
 		});
 	};
-    /**
-     * @memberOf game
-     * @desc если проскочат все именты, то выполнить обработчик
-     * @param {array} arrNamesEvents массив имен событий
-     * @param {Function} handler обработчик события
-     */
-	game.everyEvent = function (arrNamesEvents, handler) {
-		arrNamesEvents.forEach(function (eventName) {
-			game.on(eventName, handler);
-		});
-	};
-	/**
-	 * @memberOf game
-	 * @desc добавить однократный обработчик к событию
-	 * @param {String} name имя события
-	 * @param {Function} handler обработчик события
-	 */
-	game.once = function (name, handler) {
-		return game.event(name).once(handler);
-	};
-	/**
-	 * @memberOf game
-	 * @desc добавить однократный обработчик к массиву событий
-	 * @param {array} arrNamesEvents имена событий
-	 * @param {Function} handler обработчик события
-	 */
-	game.once.every = function (arrNamesEvents, handler) {
+
+	event.once.every = function (arrNamesEvents, handler) {
 		var countEvents = arrNamesEvents.length;
 
 		arrNamesEvents.forEach(function (eventName) {
-			game.once(eventName, function f() {
+			event.once(eventName, function f() {
 				countEvents--;
 				// all events triggered
 				if (!countEvents) {
@@ -210,101 +181,40 @@
 			});
 		});
 	};
-	/**
-	 * @memberOf game
-	 * @desc удалить обработчик события
-	 * @param {String} name имя события
-	 * @param {Function} link обработчик события
-	 */
-	game.onDel = function (name, link) {
+
+	event.onDel = function (name, link) {
 		if (events[name]) {
 			events[name].onDel(link);
 		}
 	};
-	/**
-	 * @memberOf game
-	 * @desc получить объект всех событий
-	 * @returns {{}} объект всех событий
-	 */
-	game.getEventList = function () {// dev only
+	event.getEventList = function () {// dev only
 		return events;
 	};
-    /**
-     * @memberOf game
-     * @desc очистить список ивентов
-     */
-	game.clearEventList = function () {
-		var slotStopEvents = events['on-slots-stop'].listners;
-
-		slotStopEvents.forEach(function (event, index) {
-			if (event.onceNameFunc) {
-				slotStopEvents.splice(index, 1);
-			}
-		});
-	};
-
-	utils.record('Event', Event);
-})();
 
 
-/**
- * @desc нигерская магия
- */
-(function () {
-	var HIDDEN = 'hidden',
-		game = window.game;
 
-	function onchange(evt) {
-		var v = 'visible', h = HIDDEN,
-			evtMap = {
-				focus: v,
-				focusin: v,
-				pageshow: v,
-				blur: h,
-				focusout: h,
-				pagehide: h
-			};
+	/* Browser Events */
+	[
+        'resize',
 
-		evt = evt || window.event;
-		if (evt.type in evtMap) { // при загрузке
-			// console.log(this[HIDDEN]);//undefined
-		} else if (game.appStatus && this[HIDDEN]) { // при блюре (сворачивание или переключение вкладки)
-			// console.log(this[HIDDEN]);//true
-			game.emitEvent('on-hidden-game');
-		} else if (game.appStatus && !this[HIDDEN]) { // при фокусе (возвращение вкладки или развёртывание страници)
-			// console.log(this[HIDDEN]);//false
-			game.emitEvent('on-visible-game');
-		}
-	}
+        'keydown',
+        'keyup',
 
-	game.visible = true;
+        'touchstart',
+        'touchmove',
+        'touchend',
 
-	if (HIDDEN in document) {
-		document.addEventListener('visibilitychange', onchange);
-	} else if ((HIDDEN = 'mozHidden') in document) {
-		document.addEventListener('mozvisibilitychange', onchange);
-	} else if ((HIDDEN = 'webkitHidden') in document) {
-		document.addEventListener('webkitvisibilitychange', onchange);
-	} else if ((HIDDEN = 'msHidden') in document) {
-		document.addEventListener('msvisibilitychange', onchange);
-	} else if ('onfocusin' in document) {
-		document.onfocusin = document.onfocusout = onchange;
-	} else {
-		window.onpageshow = window.onpagehide = window.onfocus = window.onblur = onchange;
-	}
+        'mousedown',
+        'mouseup',
 
-	if (document[HIDDEN] !== undefined) {
-		onchange({type: document[HIDDEN] ? 'blur' : 'focus'});
-	}
+        'deviceorientation'
+	].forEach(windowEventName => {
+        window.addEventListener(windowEventName,  e => event.emit('on-' + windowEventName, e), false);
+	});
 
-	game.addEvent('on-hide-message-banner');
-	game.addEvent('on-show-game-win-animation');
-	game.addEvent('on-winner-play');
-	game.addEvent('on-hidden-game');
-	game.addEvent('on-visible-game');
-	game.addEvent('on-came-response');
-	game.addEvent('on-came-bonus-response');
-	game.addEvent('on-came-origin-response');
-	game.addEvent('balance-update');
-	game.addEvent('action-complit');
-})();
+
+export default event;
+
+
+
+
