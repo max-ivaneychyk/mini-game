@@ -1,15 +1,13 @@
 import camera from './components/Camera';
+import barrel from './components/barrel';
 import Event from './lib/Event';
-import ReactEvent from './lib/React.Event';
 
-ReactEvent(window);
-
-let THREE = require('three')
+let THREE = require('three');
 var container, stats, clock, mixer;
 var scene, renderer, objects;
 var monster;
 init();
-animate();
+
 
 function init() {
 
@@ -17,36 +15,7 @@ function init() {
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x000000, 0.035);
     mixer = new THREE.AnimationMixer(scene);
-    var loader = new THREE.JSONLoader();
 
-/*    loader.load('assets/monster.js', function (geometry, materials) {
-        // adjust color a bit
-        var material = materials[0];
-        material.morphTargets = true;
-        material.color.setHex(0xffaaaa);
-        var mesh = new THREE.Mesh(geometry, materials);
-        // random placement in a grid
-        mesh.position.set(0, 0, 0);
-        var s = THREE.Math.randFloat(0.00075, 0.001);
-        mesh.scale.set(s, s, s);
-        mesh.rotation.y = THREE.Math.randFloat(-0.25, 0.25);
-        mesh.matrixAutoUpdate = false;
-        mesh.needsUpdate = true;
-        mesh.updateMatrix();
-        scene.add(mesh);
-
-
-
-        monster = mesh;
-        window.m = monster;
-/!*        mixer.clipAction(geometry.animations[0], mesh)
-            .setDuration(1)			// one second
-            .startAt(-Math.random())	// random phase (already running)
-            .play();					// let's go*!/
-
-        window.mix = mixer;
-
-    });*/
     require('three-fbx-loader')(THREE);
     var manager = new THREE.LoadingManager();
     manager.onProgress = function( item, loaded, total ) {
@@ -81,18 +50,36 @@ function onWindowResize(event) {
     camera.updateProjectionMatrix();
 }
 
-//
-function animate() {
-    requestAnimationFrame(animate);
-    render();
-}
 
-function render() {
-    var timer = Date.now() * 0.0005;
- //   mixer.update(clock.getDelta());
-    monster && (monster.position.x += 0.01);
-    renderer.render(scene, camera);
+barrel.then(Const => scene.add(Const.create()) );
+
+barrel.then(Const => {
+    let mesh = Const.create();
+    mesh.position.x = 3;
+    scene.add(mesh);
+    Event.on('RENDER',function () {
+        mesh.rotation.z += 0.01;
+    });
+});
+
+barrel.then(Const => {
+    let mesh = Const.create();
+    mesh.position.x = 1;
+    scene.add(mesh);
+    Event.on('RENDER',function () {
+        mesh.rotation.y += 0.01;
+    });
+});
+
+function animate() {
+    Event.emit('RENDER');
+    requestAnimationFrame(animate);
 }
+animate();
+
+Event.on('RENDER',function render() {
+    renderer.render(scene, camera);
+});
 
 
 var size = 10;
