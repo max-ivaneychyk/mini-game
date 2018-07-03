@@ -3,29 +3,27 @@ import barrel from './components/barrel';
 import Event from './lib/Event';
 
 let THREE = require('three');
+let fbx = require('three-fbx-loader');
 var container, stats, clock, mixer;
 var scene, renderer, objects;
 var monster;
-init();
+fbx();
 
-
-function init() {
-
-    clock = new THREE.Clock();
+clock = new THREE.Clock();
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x000000, 0.035);
     mixer = new THREE.AnimationMixer(scene);
 
-    require('three-fbx-loader')(THREE);
     var manager = new THREE.LoadingManager();
     manager.onProgress = function( item, loaded, total ) {
         console.log( item, loaded, total );
     };
 
-    var loader2 = new THREE.FBXLoader( manager );
+    var loader2 = new FBXLoader( manager );
     loader2.load( 'assets/1.fbx', function( object ) {
         scene.add( object );
     }, () => {}, e => {} );
+
 // lights
     var ambientLight = new THREE.AmbientLight(0xcccccc);
     scene.add(ambientLight);
@@ -41,7 +39,6 @@ function init() {
 
 // events
     window.addEventListener('resize', onWindowResize, false);
-}
 
 //
 function onWindowResize(event) {
